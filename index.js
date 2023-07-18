@@ -25,6 +25,94 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
 
+    const db=client.db("test");
+    const userCollectionUser=db.collection('Hunter-Users')
+    const allProperty=db.collection('Property')
+
+
+    app.post('/users',async(req,res)=>{
+        const email=req.params.email 
+        // console.log(email)
+        const user =req.body 
+        // console.log(user.email)
+        const email2=user.email
+        const query={email : email2}
+
+       
+        const result2=await userCollectionUser.findOne(query)
+        if(result2){
+          return res.send({error: true , message: "User already exist"})
+      
+        }
+  
+        else{
+          const result=await userCollectionUser.insertOne(user)
+          res.send(result)
+          
+        }
+      
+  
+    })
+
+    app.post("/postProperty",async(req,res)=>{
+      const body=req.body
+      const result=await allProperty.insertOne(body)
+      res.send(result)
+    
+      
+      console.log(body)
+    })
+
+    app.get("/allProperty/:email",async(req,res)=>{
+      const email = req.params.email;
+      const query={Email: email}
+      const cursor=allProperty.find(query)
+      const result=await cursor.toArray()
+   
+      
+      res.send(result)
+    
+      
+    
+    })
+
+
+    app.put("/updateProperty/:id", async (req, res) => {
+      const id = req.params.id;
+      const body = req.body;
+      console.log(body);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          ownername:body.ownername,
+          Email:body.Email,
+          name:body.name,
+          address:body.address,
+          city:body.city,
+          bedcount:body.bedcount,
+          bedrooms:body.bedrooms,
+          Bathroom:body.Bathroom,
+          roomsize:body.roomsize,
+          picture:body.picture,
+          start:body.start,
+          Enddata:body.Enddata,
+          rent:body.rent,
+          number:body.number,
+          Description:body.Description
+        },
+      };
+      const result = await allProperty.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+
+
+
+
+    
+    
+    
+
 
 
     // Send a ping to confirm a successful connection
