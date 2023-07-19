@@ -3,6 +3,7 @@ const express= require('express')
 const cors= require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app=express();
+const jwt= require('jsonwebtoken')
 const port= process.env.PORT || 5000  
 require('dotenv').config()
 
@@ -30,6 +31,21 @@ async function run() {
     const allProperty=db.collection('Property')
 
 
+
+
+    app.post('/jwt', async (req,res)=>{
+      const  email=req.body;
+      console.log(email);
+      const token=jwt.sign ( email, process.env.ACCESS_TOKEN_SECRET,{expiresIn : '1h',
+    })
+    console.log(token)
+      res.send({token})
+    })
+
+  
+
+
+
     app.post('/users',async(req,res)=>{
         const email=req.params.email 
         // console.log(email)
@@ -37,6 +53,7 @@ async function run() {
         // console.log(user.email)
         const email2=user.email
         const query={email : email2}
+        
 
        
         const result2=await userCollectionUser.findOne(query)
@@ -46,8 +63,12 @@ async function run() {
         }
   
         else{
+        
+   
           const result=await userCollectionUser.insertOne(user)
           res.send(result)
+       
+      
           
         }
       
@@ -75,25 +96,27 @@ async function run() {
       
     
     })
+    app.get("/allProperty",async(req,res)=>{
+   
+      const result=await allProperty.find().toArray()
+      res.send(result)
+    
+    
+    })
 
 
-    app.put("/updateProperty/:id", async (req, res) => {
+    app.put("/update/:id", async (req, res) => {
       const id = req.params.id;
+    
       const body = req.body;
-      console.log(body);
+  
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
-          ownername:body.ownername,
-          Email:body.Email,
-          name:body.name,
-          address:body.address,
-          city:body.city,
-          bedcount:body.bedcount,
-          bedrooms:body.bedrooms,
-          Bathroom:body.Bathroom,
+        
+      
           roomsize:body.roomsize,
-          picture:body.picture,
+     
           start:body.start,
           Enddata:body.Enddata,
           rent:body.rent,
@@ -105,6 +128,13 @@ async function run() {
       res.send(result);
     });
 
+
+    app.delete('/deleteProperty/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await allProperty.deleteOne(query);
+      res.send(result);
+    })
 
 
 
