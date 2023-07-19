@@ -35,16 +35,11 @@ async function run() {
 
 
 
-    app.post('/jwt', async (req,res)=>{
-      const  email=req.body;
-      console.log(email);
-      const token=jwt.sign ( email, process.env.ACCESS_TOKEN_SECRET,{expiresIn : '7d',
-    })
-    console.log(token)
-      res.send({token})
+ 
+ 
 
-      
-    })
+
+
 
   
 
@@ -82,7 +77,33 @@ async function run() {
       }
     });
   
+    app.post('/login', async (req, res) => {
+      const email = req.body.email;
+      const password = req.body.password;
+    
+      try {
 
+        const user = await userCollectionUser.findOne({ email: email });
+        console.log(user)
+    
+        if (!user) {
+          return res.json({ error: true, message: 'Invalid email or password' });
+        }
+   
+        const passwordMatch = await bcrypt.compare(password, user.password);
+    
+        if (!passwordMatch) {
+          return res.json({ error: true, message: 'Invalid email or password' });
+        }
+    
+      
+        const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+        return res.json({ token: token , user: user});
+      } catch (error) {
+        console.error('Error during login:', error);
+        return res.status(500).json({ error: true, message: 'Internal server error' });
+      }
+    });
 
    
 
@@ -99,14 +120,40 @@ async function run() {
       console.log(body)
     })
 
-    app.get("/allProperty/:email",async(req,res)=>{
-      const email = req.params.email;
-      const query={Email: email}
-      const cursor=allProperty.find(query)
-      const result=await cursor.toArray()
-   
-      
-      res.send(result)
+
+    const verifyJWT=(req,res,next  )=>{
+      const authorization=req.headers.authorization
+      if(!authorization){
+        return res.status(401).send({error: true , message: "Unauthorized Access"})
+      }
+      console.log(authorization)
+      // /token verify
+      const token=authorization.split(' ')[1]
+      console.log(token)
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+        if(err){
+          return res.status(401).send({error: true , message: "Unauthorized Access"})
+        }
+        req.decoded =decoded
+        next()  
+      })}
+
+
+
+    app.get("/allProperty/:email",verifyJWT,async(req,res)=>{
+    
+
+      const decodedEmail=req.decoded.email
+  console.log(decodedEmail)
+  const email = req.params.email;
+  if(email !== decodedEmail){
+    return res.status(403)
+    .send({error: true, message: 'Forbidden Access'})
+  }
+  const query={Email: email}
+  const cursor=allProperty.find(query)
+  const result=await cursor.toArray()
+  res.send(result)
 
      
       
