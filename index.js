@@ -31,6 +31,7 @@ async function run() {
     const db=client.db("test");
     const userCollectionUser=db.collection('Hunter-Users')
     const allProperty=db.collection('Property')
+    const booking=db.collection('bookings')
 
 
 
@@ -120,6 +121,14 @@ async function run() {
       console.log(body)
     })
 
+    app.post('/carts', async (req,res)=>{
+      const item=req.body
+      console.log(item)
+      const result=await booking.insertOne(item)
+      res.send(result)
+      })
+
+      
 
     const verifyJWT=(req,res,next  )=>{
       const authorization=req.headers.authorization
@@ -167,6 +176,25 @@ async function run() {
     
     })
 
+    app.get('/favs/:email',verifyJWT,async(req,res)=>{
+      const decodedEmail=req.decoded.email
+      console.log(decodedEmail)
+      const email = req.params.email;
+      if(email !== decodedEmail){
+        return res.status(403)
+        .send({error: true, message: 'Forbidden Access'})
+      }
+      const query={Bookedby: email}
+      const cursor=booking.find(query)
+      const result=await cursor.toArray()
+      res.send(result)
+    })
+    app.delete('/deleteCart/:id',async (req,res)=>{
+      const id=req.params.id
+      const query={_id: new ObjectId(id) }
+      const result =await booking.deleteOne(query);
+      res.send(result)
+    })
 
     app.put("/update/:id", async (req, res) => {
       const id = req.params.id;
