@@ -4,8 +4,10 @@ const cors= require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app=express();
 const jwt= require('jsonwebtoken')
+const bcrypt = require('bcrypt');
 const port= process.env.PORT || 5000  
 require('dotenv').config()
+const saltRounds = 10
 
 app.use(cors())
 
@@ -36,44 +38,57 @@ async function run() {
     app.post('/jwt', async (req,res)=>{
       const  email=req.body;
       console.log(email);
-      const token=jwt.sign ( email, process.env.ACCESS_TOKEN_SECRET,{expiresIn : '1h',
+      const token=jwt.sign ( email, process.env.ACCESS_TOKEN_SECRET,{expiresIn : '7d',
     })
     console.log(token)
       res.send({token})
+
+      
     })
 
   
 
+    app.post('/users', async (req, res) => {
+      const name= req.body.name
+      const email = req.body.email;
+      const password = req.body.password;
+      const role=req.body.role
 
-
-    app.post('/users',async(req,res)=>{
-        const email=req.params.email 
-        // console.log(email)
-        const user =req.body 
-        // console.log(user.email)
-        const email2=user.email
-        const query={email : email2}
-        
-
+    
+      try {
        
-        const result2=await userCollectionUser.findOne(query)
-        if(result2){
-          return res.send({error: true , message: "User already exist"})
-      
+        const existingUser = await userCollectionUser.findOne({ email: email });
+    
+        if (existingUser) {
+          return res.json({ error: true, message: 'User already exists' });
         }
-  
-        else{
-        
+    
    
-          const result=await userCollectionUser.insertOne(user)
-          res.send(result)
-       
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+        const newUser = await userCollectionUser.insertOne({
+          email: email,
+          password: hashedPassword,
+          role: role,
+          name: name
+
+        });
       
-          
-        }
-      
+        const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+        return res.json({ token: token });
+      } catch (error) {
+        console.error('Error creating a new user:', error);
+        return res.status(500).json({ error: true, message: 'Internal server error' });
+      }
+    });
   
-    })
+
+
+   
+
+
+  
+
 
     app.post("/postProperty",async(req,res)=>{
       const body=req.body
@@ -92,7 +107,8 @@ async function run() {
    
       
       res.send(result)
-    
+
+     
       
     
     })
